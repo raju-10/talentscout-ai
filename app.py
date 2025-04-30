@@ -53,7 +53,7 @@ def get_ai_response(user_input, chat_history, candidate_info, current_stage):
         )
         reply = response.choices[0].message["content"]
         next_stage = current_stage
-         if current_stage == "greeting":
+        if current_stage == "greeting":
             if user_input.strip().lower() not in ["hi", "hello", "hey"]:
                 candidate_info["name"] = user_input
                 next_stage = "collecting_info"
