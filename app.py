@@ -1,8 +1,13 @@
+
 import streamlit as st
-import openai
+import google.generativeai as genai
 import os
 import json
 from datetime import datetime
+
+# Setup Gemini
+genai.configure(api_key="AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI")
+model = genai.GenerativeModel("gemini-pro")
 
 def save_chat(chat_history, candidate_info):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -33,28 +38,12 @@ if 'is_complete' not in st.session_state:
     st.session_state.is_complete = False
 
 def get_ai_response(user_input, chat_history, candidate_info, current_stage):
-    messages = [{"role": "system", "content": get_system_prompt(candidate_info, current_stage)}]
-    for message in chat_history:
-        if message["is_user"]:
-            messages.append({"role": "user", "content": message["text"]})
-        else:
-            messages.append({"role": "assistant", "content": message["text"]})
-    messages.append({"role": "user", "content": user_input})
-
-    api_key = os.getenv("OPENAI_API_KEY") or st.session_state.get("api_key", "")
-    if not api_key:
-        return "Please enter an OpenAI API key to continue.", current_stage
-
+    prompt = get_system_prompt(candidate_info, current_stage)
+    history = "\n".join([f"User: {m['text']}" if m["is_user"] else f"Assistant: {m['text']}" for m in chat_history])
     try:
-        openai.api_key = api_key
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=1000,
-            temperature=0.7
-        )
-        ai_message = response.choices[0].message.content.strip()
-        if current_stage == "greeting" and "your full name" in ai_message:
+        response = model.generate_content(prompt + "\n" + history + f"\nUser: {user_input}")
+        ai_message = response.text
+        if current_stage == "greeting":
             next_stage = "collecting_info"
         elif current_stage == "collecting_info" and any(x in ai_message.lower() for x in ["technologies", "tech stack", "tools"]):
             next_stage = "tech_stack"
@@ -65,7 +54,6 @@ def get_ai_response(user_input, chat_history, candidate_info, current_stage):
             st.session_state.is_complete = True
         else:
             next_stage = current_stage
-
         update_candidate_info(user_input, current_stage, candidate_info)
         return ai_message, next_stage
     except Exception as e:
@@ -112,12 +100,7 @@ def get_system_prompt(candidate_info, current_stage):
         return base_prompt + "Thank the candidate and close the conversation."
 
 # UI layout
-st.title("TalentScout Hiring Assistant")
-
-api_key = st.sidebar.text_input("Enter OpenAI API Key:", type="password")
-if api_key:
-    st.session_state["api_key"] = api_key
-    os.environ["OPENAI_API_KEY"] = api_key
+st.title("TalentScout Hiring Assistant (Gemini AI)")
 
 with st.sidebar:
     st.subheader("Candidate Info")
@@ -126,7 +109,6 @@ with st.sidebar:
             st.write(f"{key.title()}: {', '.join(val)}")
         else:
             st.write(f"{key.title()}: {val}")
-
     if st.button("🔁 Reset"):
         st.session_state.chat_history = []
         st.session_state.candidate_info = {k: "" if k != "tech_stack" else [] for k in st.session_state.candidate_info}
