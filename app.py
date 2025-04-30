@@ -1,11 +1,9 @@
-
 import streamlit as st
 import openai
 import os
 import json
 from datetime import datetime
 
-# Function to save chat data
 def save_chat(chat_history, candidate_info):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"chat_history_{timestamp}.json"
@@ -17,7 +15,6 @@ def save_chat(chat_history, candidate_info):
         json.dump(data, f, indent=4)
     return filename
 
-# Initialize session state variables
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'candidate_info' not in st.session_state:
@@ -35,7 +32,6 @@ if 'current_stage' not in st.session_state:
 if 'is_complete' not in st.session_state:
     st.session_state.is_complete = False
 
-# Function to get AI response
 def get_ai_response(user_input, chat_history, candidate_info, current_stage):
     messages = [{"role": "system", "content": get_system_prompt(candidate_info, current_stage)}]
     for message in chat_history:
@@ -115,7 +111,7 @@ def get_system_prompt(candidate_info, current_stage):
     elif current_stage == "completion":
         return base_prompt + "Thank the candidate and close the conversation."
 
-# Streamlit UI
+# UI layout
 st.title("TalentScout Hiring Assistant")
 
 api_key = st.sidebar.text_input("Enter OpenAI API Key:", type="password")
@@ -136,9 +132,9 @@ with st.sidebar:
         st.session_state.candidate_info = {k: "" if k != "tech_stack" else [] for k in st.session_state.candidate_info}
         st.session_state.current_stage = "greeting"
         st.session_state.is_complete = False
-        st.experimental_rerun()
+        st.rerun()
 
-# Start chat
+# Start conversation
 if not st.session_state.chat_history:
     welcome = "Hello! I'm the TalentScout Hiring Assistant. What's your full name?"
     st.session_state.chat_history.append({"text": welcome, "is_user": False})
@@ -155,7 +151,7 @@ if not st.session_state.is_complete:
             goodbye = "Thanks! We'll review your info and get back to you. Goodbye!"
             st.session_state.chat_history.append({"text": goodbye, "is_user": False})
             st.session_state.is_complete = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.session_state.chat_history.append({"text": user_input, "is_user": True})
             ai_response, next_stage = get_ai_response(user_input, st.session_state.chat_history,
@@ -165,7 +161,7 @@ if not st.session_state.is_complete:
             st.session_state.chat_history.append({"text": ai_response, "is_user": False})
             if next_stage == "completion":
                 save_chat(st.session_state.chat_history, st.session_state.candidate_info)
-            st.experimental_rerun()
+            st.rerun()
 else:
     if st.button("Start New Chat"):
         st.session_state.chat_history = []
@@ -180,4 +176,4 @@ else:
         }
         st.session_state.current_stage = "greeting"
         st.session_state.is_complete = False
-        st.experimental_rerun()
+        st.rerun()
