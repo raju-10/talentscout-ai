@@ -8,7 +8,8 @@ from datetime import datetime
 # Setup Gemini
 import os
 genai.configure(api_key=os.getenv("AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI"))
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel(model_name="models/gemini-pro")
+
 
 def save_chat(chat_history, candidate_info):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
