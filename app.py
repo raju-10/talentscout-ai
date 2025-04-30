@@ -5,41 +5,35 @@ import json
 from datetime import datetime
 import re
 
-# Set OpenRouter credentials for DeepSeek
+# ✅ Configure OpenRouter for Mistral
 openai.api_key = st.secrets["OPENROUTER_API_KEY"]
 openai.api_base = "https://openrouter.ai/api/v1"
+MODEL_ID = "mistralai/mistral-7b-instruct"
 
-# Save chat
+# 💾 Save chat
 def save_chat(chat_history, candidate_info):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"chat_history_{timestamp}.json"
     data = {"candidate_info": candidate_info, "chat_history": chat_history}
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
-    return filename
 
-# Initialize session state
+# 🔁 Initialize session state
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 if 'candidate_info' not in st.session_state:
     st.session_state.candidate_info = {
-        "name": "",
-        "email": "",
-        "phone": "",
-        "experience": "",
-        "position": "",
-        "location": "",
-        "tech_stack": []
+        "name": "", "email": "", "phone": "",
+        "experience": "", "position": "", "location": "", "tech_stack": []
     }
 if 'current_stage' not in st.session_state:
     st.session_state.current_stage = "greeting"
 if 'is_complete' not in st.session_state:
     st.session_state.is_complete = False
 
-# AI response
+# 🧠 Generate response
 def get_ai_response(user_input, chat_history, candidate_info, current_stage):
-    system_prompt = get_system_prompt(candidate_info, current_stage)
-    messages = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": get_system_prompt(candidate_info, current_stage)}]
     for msg in chat_history:
         role = "user" if msg["is_user"] else "assistant"
         messages.append({"role": role, "content": msg["text"]})
@@ -47,9 +41,9 @@ def get_ai_response(user_input, chat_history, candidate_info, current_stage):
 
     try:
         response = openai.ChatCompletion.create(
-            model="deepseek/deepseek-chat",
+            model=MODEL_ID,
             messages=messages,
-            temperature=0.7,
+            temperature=0.7
         )
         reply = response.choices[0].message["content"]
         update_candidate_info(user_input, current_stage, candidate_info)
@@ -58,7 +52,7 @@ def get_ai_response(user_input, chat_history, candidate_info, current_stage):
     except Exception as e:
         return f"❌ Error: {str(e)}", current_stage
 
-# Info extraction
+# 📥 Extract user info
 def update_candidate_info(user_input, current_stage, candidate_info):
     user_input = user_input.strip()
     lower_input = user_input.lower()
@@ -76,12 +70,11 @@ def update_candidate_info(user_input, current_stage, candidate_info):
             candidate_info["position"] = user_input
         elif not candidate_info["location"] and any(w in lower_input for w in ["city", "remote", "india", "usa", "bangalore", "delhi"]):
             candidate_info["location"] = user_input
-
     elif current_stage == "tech_stack":
         technologies = [tech.strip() for tech in user_input.replace(",", " ").split() if len(tech.strip()) > 1]
         candidate_info["tech_stack"].extend(technologies)
 
-# Stage progression
+# 🔄 Decide stage progression
 def determine_next_stage(current_stage, candidate_info):
     if current_stage == "greeting":
         return "collecting_info"
@@ -96,7 +89,7 @@ def determine_next_stage(current_stage, candidate_info):
         return "completion"
     return current_stage
 
-# Prompt template
+# 📝 System prompt template
 def get_system_prompt(candidate_info, current_stage):
     base_prompt = """
     You are TalentScout's AI Hiring Assistant. Have a friendly and professional conversation to collect candidate info and assess technical skills.
@@ -119,16 +112,13 @@ def get_system_prompt(candidate_info, current_stage):
     elif current_stage == "completion":
         return base_prompt + "Thank the candidate and close the conversation."
 
-# UI layout
-st.title("TalentScout Hiring Assistant (DeepSeek via OpenRouter)")
+# 🖼️ Streamlit UI
+st.title("TalentScout Hiring Assistant (Mistral via OpenRouter)")
 
 with st.sidebar:
     st.subheader("Candidate Info")
     for key, val in st.session_state.candidate_info.items():
-        if isinstance(val, list):
-            st.write(f"{key.title()}: {', '.join(val)}")
-        else:
-            st.write(f"{key.title()}: {val}")
+        st.write(f"{key.title()}: {', '.join(val) if isinstance(val, list) else val}")
     if st.button("🔁 Reset"):
         st.session_state.chat_history = []
         st.session_state.candidate_info = {k: "" if k != "tech_stack" else [] for k in st.session_state.candidate_info}
@@ -136,14 +126,14 @@ with st.sidebar:
         st.session_state.is_complete = False
         st.rerun()
 
-# Start chat
+# 🤖 Chat
 if not st.session_state.chat_history:
     welcome = "Hello! I'm the TalentScout Hiring Assistant. What's your full name?"
     st.session_state.chat_history.append({"text": welcome, "is_user": False})
 
-for message in st.session_state.chat_history:
-    role = "You" if message["is_user"] else "Assistant"
-    st.markdown(f"**{role}:** {message['text']}")
+for msg in st.session_state.chat_history:
+    role = "You" if msg["is_user"] else "Assistant"
+    st.markdown(f"**{role}:** {msg['text']}")
 
 if not st.session_state.is_complete:
     user_input = st.text_input("Your response:")
@@ -173,13 +163,8 @@ else:
     if st.button("Start New Chat"):
         st.session_state.chat_history = []
         st.session_state.candidate_info = {
-            "name": "",
-            "email": "",
-            "phone": "",
-            "experience": "",
-            "position": "",
-            "location": "",
-            "tech_stack": []
+            "name": "", "email": "", "phone": "",
+            "experience": "", "position": "", "location": "", "tech_stack": []
         }
         st.session_state.current_stage = "greeting"
         st.session_state.is_complete = False
