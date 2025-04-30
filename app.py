@@ -6,7 +6,8 @@ import json
 from datetime import datetime
 
 # Setup Gemini
-genai.configure(api_key="AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI")
+import os
+genai.configure(api_key=os.getenv("AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI"))
 model = genai.GenerativeModel("gemini-pro")
 
 def save_chat(chat_history, candidate_info):
