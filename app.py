@@ -7,8 +7,12 @@ from datetime import datetime
 
 # Setup Gemini
 import os
-genai.configure(api_key=os.getenv("AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI"))
+import google.generativeai as genai
+import streamlit as st
+
+genai.configure(api_key=st.secrets["AIzaSyBzANvTCcor-jsCYIjw0iWNeYYZpPO83iI"])
 model = genai.GenerativeModel(model_name="gemini-pro")
+
 
 
 
